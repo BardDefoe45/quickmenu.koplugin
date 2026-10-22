@@ -20,7 +20,7 @@ Config.DEFAULTS = {
             show_shadow = true,
             fit_ctrl = true,
             justified_ctrl = true,
-            items = { "wifi", "night", "light", "rotate", "lock", "usb", "power", "bluetooth" }
+            items = { "wifi", "bluetooth", "night", "light", "rotate", "lock", "usb", "power" }
         },
         frontlight = {
             enabled_f = true,
