@@ -2,6 +2,6 @@ local _ = require("common/i18n").gettext
 return {
     name = "quickmenu",
     fullname = _("Quick Menu"),
-    description = _("Quick Menu for settings and actions."),
-    version = "2.0",
+    description = _("Quick Menu for settings and actions (with Kindle Bluetooth management)."),
+    version = "2.1",
 }

@@ -276,6 +276,18 @@ function QuickMenu.buildGlobalSubmenu(plugin, close, refresh)
         separator = true,
     })
 
+    -- bluetooth (Kindle only)
+    local ok_bt, Bluetooth = pcall(require, "bluetooth/dialog")
+    if ok_bt and Device:isKindle() and Bluetooth.available() then
+        table.insert(global_items, {
+            text = "\u{E7AE} " .. _("Bluetooth") .. "\xE2\x80\xA6",
+            keep_menu_open = true,
+            callback = close(function()
+                Bluetooth.show(plugin)
+            end),
+        })
+    end
+
     -- style
     table.insert(global_items, {
         text = _("Style") .. "\xE2\x80\xA6",

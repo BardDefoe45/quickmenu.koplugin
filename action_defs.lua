@@ -15,6 +15,7 @@ local UIManager    = require("ui/uimanager")
 local Util         = require("util")
 
 local Utils            = require("common/utils")
+local Bluetooth        = require("bluetooth/dialog")
 local _                = require("common/i18n").gettext
 
 local ActionDefs = {}
@@ -116,6 +117,22 @@ function ActionDefs.get()
                 end
                 if NetworkMgr:isWifiOn() then NetworkMgr:toggleWifiOff(do_connect, true)
                 else do_connect() end
+            end
+        },
+        bluetooth = {
+            icon = "\u{E7AE}", -- bluetooth
+            icon_func = function(ctx) return Bluetooth.action_icon() end,
+            label = _("Bluetooth"),
+            label_func = function(ctx) return Bluetooth.action_label() end,
+            category = "system",
+            active_func = function(ctx) return Bluetooth.is_active() end,
+            -- Only on Kindles whose Bluetooth is driven by com.lab126.btfd.
+            visible_func = function(ctx) return ctx.device:isKindle() and Bluetooth.available() end,
+            help_text = _("Tap : Toggle Bluetooth\nHold : Manage Bluetooth devices"),
+            callback = function(ctx) Bluetooth.toggle(ctx) end,
+            hold_callback = function(ctx)
+                Utils.closeMenu(ctx.touch_menu)
+                Bluetooth.show(ctx)
             end
         },
         night = {
