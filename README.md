@@ -173,15 +173,32 @@ verifies the state after every one of them, instead of trusting the write:
 | :--- | :--- | :--- |
 | 1 | `com.lab126.btfd` LIPC, `BTenable` = `"1:1"` / `"0:1"` | Broadcom Kindles, and the LIPC facade on newer ones |
 | 2 | `com.lab126.btfd` LIPC, `BTenable` = `"1"` / `"0"` | firmwares that want the bare value |
-| 3 | `/usr/bin/ace_bt_cli enable` / `disable` | MediaTek (11th/12th gen) — the stock `ace_bt` stack |
-| 4 | `/usr/bin/wmt_cli bluetooth on` / `off` | MediaTek CONSYS chip power |
-| 5 | `initctl start/stop acsbtfd` + `btmanagerd` | MediaTek stock daemons |
+| 3 | `initctl start/stop acsbtfd` + `btmanagerd` | MediaTek stock daemons — **started first when turning the radio on**, because they are down once the radio was switched off |
+| 4 | `/usr/bin/ace_bt_cli enable` / `disable` | MediaTek (11th/12th gen) — the stock `ace_bt` stack |
+| 5 | `/usr/bin/wmt_cli bluetooth on` / `off` | MediaTek CONSYS chip power |
 | 6 | `com.lab126.btfd` LIPC, `btEnabled` = 1/0 | firmwares exposing `btEnabled` instead |
 | 7 | `/proc/bluetooth/btenable` | Broadcom chip power switch |
 
 The state is read from `btfd`'s `BTstate` when it answers, and from
 `ace_bt_cli radiostate` otherwise; whichever backend actually moved the radio
 last is the one the button trusts afterwards.
+
+### The button never disappears
+
+With the radio off the Bluetooth stack can be down entirely, and then *nothing*
+answers — not `btfd`, not `ace_bt_cli`. That is why the button used to hide
+itself (showing `n/a`) exactly when it was needed to turn the radio back on.
+
+Two things keep it usable:
+
+* **Visibility is decided by capability, not by the current state.** The button
+  stays as soon as the device has a control mechanism at all (`ace_bt_cli`,
+  `wmt_cli`, `/proc/bluetooth/btenable`, the `acsbtfd`/`btmanagerd` upstart
+  jobs, or a `btfd` that answered once). That fact is remembered in the
+  settings, so it also survives a restart.
+* **The last known state is remembered** (`bluetooth_state` in
+  `quick_menu_settings.lua`). When the state cannot be read, the button shows
+  what it last knew and toggles in that direction, instead of guessing wrong.
 
 ### Diagnostics
 

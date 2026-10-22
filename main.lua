@@ -410,9 +410,13 @@ function QuickMenuPlugin:init()
     local status, err = pcall(function()
         local Config = require("config")
         self.config = Config.load()
-        -- Kindle Bluetooth: verbose tracing, off unless the user asked for it.
+        -- Kindle Bluetooth: verbose tracing, off unless the user asked for it,
+        -- and the last known radio state, so the button can still tell on from
+        -- off while the Bluetooth stack is down.
         pcall(function()
-            require("bluetooth").set_debug(self.config.bluetooth_debug == true)
+            local Bluetooth = require("bluetooth")
+            Bluetooth.set_debug(self.config.bluetooth_debug == true)
+            Bluetooth.attach_config(self.config, function() Config.save(self.config) end)
         end)
         patchTouchMenu(self)
         patchFileManagerMenu(self)

@@ -126,8 +126,10 @@ function ActionDefs.get()
             label_func = function(ctx) return Bluetooth.action_label() end,
             category = "system",
             active_func = function(ctx) return Bluetooth.is_active() end,
-            -- Only on Kindles whose Bluetooth is driven by com.lab126.btfd.
-            visible_func = function(ctx) return ctx.device:isKindle() and Bluetooth.available() end,
+            -- Stays visible whenever the device has a Bluetooth control
+            -- mechanism, even when the radio is off and the stack is down:
+            -- otherwise there would be no way to turn the radio back on.
+            visible_func = function(ctx) return ctx.device:isKindle() and Bluetooth.can_control() end,
             help_text = _("Tap : Toggle Bluetooth\nHold : Show diagnostics"),
             callback = function(ctx) Bluetooth.toggle(ctx) end,
             hold_callback = function(ctx)

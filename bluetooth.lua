@@ -65,6 +65,57 @@ function Bluetooth.is_debug()
 end
 
 -- ============================================================
+-- Last known state
+-- ============================================================
+-- Set once btfd has answered, so its write strategies stay in the chain even
+-- while the stack is down.
+local btfd_seen = false
+-- Set once a control mechanism was found on this device.
+local sticky_capable = false
+
+-- With the radio off the Bluetooth stack may be down entirely, and then the
+-- current state cannot be read at all. The last state we saw is remembered
+-- (and persisted by the plugin) so the button can still say on/off and know
+-- which way to toggle.
+local state_hint = Bluetooth.STATE_OFF
+local persist_state = nil
+local config = nil
+local save_config = nil
+
+function Bluetooth.set_state_hint(state)
+    if state == Bluetooth.STATE_ON or state == Bluetooth.STATE_OFF then
+        state_hint = state
+    end
+end
+
+function Bluetooth.set_state_persister(fn)
+    persist_state = fn
+end
+
+-- The plugin hands over its config so the last known state and the "this
+-- device can switch Bluetooth" fact survive a restart: with the radio off the
+-- stack can be down, and then neither is readable from the device.
+function Bluetooth.attach_config(cfg, save)
+    config = cfg
+    save_config = save
+    if type(cfg) == "table" then
+        Bluetooth.set_state_hint(cfg.bluetooth_state)
+        if cfg.bluetooth_capable == true then sticky_capable = true end
+    end
+end
+
+local function save_now()
+    if save_config then pcall(save_config) end
+end
+
+local function remember_state(on)
+    state_hint = on and Bluetooth.STATE_ON or Bluetooth.STATE_OFF
+    if type(config) == "table" then config.bluetooth_state = state_hint end
+    if persist_state then pcall(persist_state, state_hint) end
+    save_now()
+end
+
+-- ============================================================
 -- LIPC plumbing
 -- ============================================================
 local open_lipc, scalar_lipc
@@ -224,6 +275,9 @@ end
 Bluetooth.ACE_CLI  = "/usr/bin/ace_bt_cli"
 Bluetooth.WMT_CLI  = "/usr/bin/wmt_cli"
 Bluetooth.BCM_PROC = "/proc/bluetooth/btenable"
+Bluetooth.INITCTL  = "/sbin/initctl"
+Bluetooth.INIT_CONF_DIRS = { "/etc/init", "/etc/upstart" }
+Bluetooth.INIT_JOBS = { "acsbtfd", "btmanagerd" }
 
 local ace_present = nil
 
@@ -283,6 +337,7 @@ end
 local function read_state_btfd()
     local v = read_int("BTstate")
     if v == nil then return nil end
+    btfd_seen = true
     return (v ~= 0) and Bluetooth.STATE_ON or Bluetooth.STATE_OFF
 end
 
@@ -292,7 +347,7 @@ function Bluetooth.status(force)
         return cache.status
     end
 
-    local status = { available = false }
+    local status = { available = false, readable = false }
     local state
     if state_source == "ace" then
         state = read_state_ace() or read_state_btfd()
@@ -307,10 +362,16 @@ function Bluetooth.status(force)
     end
     if state ~= nil then
         status.available = true
+        status.readable = true
         status.state = state
+        state_hint = state
+    else
+        -- The stack is down: we cannot read the radio, so the last known
+        -- state is what the button shows.
+        status.state = state_hint
     end
 
-    if status.state == Bluetooth.STATE_ON then
+    if status.state == Bluetooth.STATE_ON and status.readable then
         local name = read_str("BTconnectedDevName")
         if name == "" then name = nil end
         status.name = name
@@ -333,88 +394,159 @@ function Bluetooth.invalidate()
 end
 
 -- ============================================================
+-- Can this device be asked to switch Bluetooth at all?
+-- ============================================================
+-- Deliberately not the same question as "is the radio on right now": with the
+-- radio off the Bluetooth stack can be down entirely, and then nothing
+-- answers. Hiding the button in that state would leave no way to turn the
+-- radio back on, so the button stays whenever a control mechanism exists.
+local function has_initctl_jobs()
+    if not binary(Bluetooth.INITCTL) then return false end
+    for _, dir in ipairs(Bluetooth.INIT_CONF_DIRS) do
+        for _, job in ipairs(Bluetooth.INIT_JOBS) do
+            if binary(dir .. "/" .. job .. ".conf") then return true end
+        end
+    end
+    return false
+end
+
+function Bluetooth.can_control()
+    if sticky_capable then return true end
+    local found = has_ace() or wmt_present() or binary(Bluetooth.BCM_PROC) or has_initctl_jobs()
+    if not found and (btfd_seen or read_int("BTstate") ~= nil) then
+        found = true
+        btfd_seen = true
+    end
+    if found then
+        sticky_capable = true
+        if type(config) == "table" and config.bluetooth_capable ~= true then
+            config.bluetooth_capable = true
+            save_now()
+        end
+        return true
+    end
+    return false
+end
+
+-- ============================================================
 -- Strategies
 -- ============================================================
 -- Each one: apply(on) performs the write, read() returns 0/1/nil, ok reports
 -- whether the strategy is usable on this device at all.
-local strategies = {
-    {
-        name = "btfd BTenable pair (1:1 / 0:1)",
-        source = "btfd",
-        ok = function() return read_int("BTstate") ~= nil end,
-        apply = function(on) write_str("BTenable", on and "1:1" or "0:1") end,
-        read = function() local v = read_int("BTstate"); return v and ((v ~= 0) and 1 or 0) end,
-    },
-    {
-        name = "btfd BTenable plain (1 / 0)",
-        source = "btfd",
-        ok = function() return read_int("BTstate") ~= nil end,
-        apply = function(on) write_str("BTenable", on and "1" or "0") end,
-        read = function() local v = read_int("BTstate"); return v and ((v ~= 0) and 1 or 0) end,
-    },
-    {
-        name = "ace_bt_cli enable/disable",
+--
+-- The order differs per direction: turning the radio on may need the stock
+-- daemons up first (they are down once the radio was switched off), while
+-- turning it off is cleanest through the daemon that owns the radio.
+local function btfd_strategies(on)
+    local value_pair = on and "1:1" or "0:1"
+    local value_plain = on and "1" or "0"
+    return {
+        {
+            name = "btfd BTenable pair (" .. value_pair .. ")",
+            source = "btfd",
+            ok = function() return btfd_seen or read_int("BTstate") ~= nil end,
+            apply = function() write_str("BTenable", value_pair) end,
+            read = function() local v = read_int("BTstate"); return v and ((v ~= 0) and 1 or 0) end,
+        },
+        {
+            name = "btfd BTenable plain (" .. value_plain .. ")",
+            source = "btfd",
+            ok = function() return btfd_seen or read_int("BTstate") ~= nil end,
+            apply = function() write_str("BTenable", value_plain) end,
+            read = function() local v = read_int("BTstate"); return v and ((v ~= 0) and 1 or 0) end,
+        },
+    }
+end
+
+local function upstart_strategy(on)
+    return {
+        name = on and "upstart start acsbtfd / btmanagerd"
+                or "upstart stop acsbtfd / btmanagerd",
         source = "ace",
-        ok = has_ace,
-        apply = function(on) ace_write(on) end,
-        read = ace_state,
-    },
-    {
-        name = "wmt_cli bluetooth on/off",
-        source = "ace",
-        ok = wmt_present,
-        apply = function(on) wmt_write(on) end,
-        read = ace_state,
-    },
-    {
-        name = "upstart acsbtfd / btmanagerd",
-        source = "ace",
-        ok = function() return binary("/sbin/initctl") end,
-        apply = function(on)
+        ok = function() return has_initctl_jobs() end,
+        apply = function()
             local action = on and "start" or "stop"
-            sh(string.format("/sbin/initctl %s acsbtfd", action))
-            sh(string.format("/sbin/initctl %s btmanagerd", action))
+            for _, job in ipairs(Bluetooth.INIT_JOBS) do
+                sh(string.format("%s %s %s", Bluetooth.INITCTL, action, job))
+            end
         end,
         read = ace_state,
-    },
-    {
-        name = "btfd btEnabled (int)",
-        source = "btfd",
-        ok = function()
-            -- Some firmwares expose btEnabled instead of BTstate/BTenable.
-            local out = sh(string.format("lipc-get-prop %s btEnabled", BTFD))
-            return out ~= nil and out:match("^%s*%d") ~= nil
-        end,
-        apply = function(on) write_int("btEnabled", on and 1 or 0) end,
-        read = function()
-            local out = sh(string.format("lipc-get-prop %s btEnabled", BTFD))
-            local v = out and tonumber(out:match("^%s*(%d+)"))
-            return v and ((v ~= 0) and 1 or 0)
-        end,
-    },
-    {
-        name = "/proc/bluetooth/btenable (Broadcom chip power)",
-        source = "btfd",
-        ok = function() return binary(Bluetooth.BCM_PROC) end,
-        apply = function(on)
-            local f = io.open(Bluetooth.BCM_PROC, "w")
-            if not f then
-                trace_line("%s write failed", Bluetooth.BCM_PROC)
-                return
-            end
-            f:write(on and "1\n" or "0\n")
-            f:close()
-            trace_line("%s = %d", Bluetooth.BCM_PROC, on and 1 or 0)
-        end,
-        read = function()
-            local f = io.open(Bluetooth.BCM_PROC, "r")
-            if not f then return nil end
-            local v = tonumber((f:read("*l") or ""):match("%d"))
-            f:close()
-            return v
-        end,
-    },
+    }
+end
+
+local ace_strategy = {
+    name = "ace_bt_cli enable/disable",
+    source = "ace",
+    ok = has_ace,
+    apply = function(on) ace_write(on) end,
+    read = ace_state,
 }
+
+local wmt_strategy = {
+    name = "wmt_cli bluetooth on/off",
+    source = "ace",
+    ok = wmt_present,
+    apply = function(on) wmt_write(on) end,
+    read = ace_state,
+}
+
+local btenabled_strategy = {
+    name = "btfd btEnabled (int)",
+    source = "btfd",
+    ok = function()
+        -- Some firmwares expose btEnabled instead of BTstate/BTenable.
+        local out = sh(string.format("lipc-get-prop %s btEnabled", BTFD))
+        return out ~= nil and out:match("^%s*%d") ~= nil
+    end,
+    apply = function(on) write_int("btEnabled", on and 1 or 0) end,
+    read = function()
+        local out = sh(string.format("lipc-get-prop %s btEnabled", BTFD))
+        local v = out and tonumber(out:match("^%s*(%d+)"))
+        return v and ((v ~= 0) and 1 or 0)
+    end,
+}
+
+local bcm_strategy = {
+    name = "/proc/bluetooth/btenable (Broadcom chip power)",
+    source = "btfd",
+    ok = function() return binary(Bluetooth.BCM_PROC) end,
+    apply = function(on)
+        local f = io.open(Bluetooth.BCM_PROC, "w")
+        if not f then
+            trace_line("%s write failed", Bluetooth.BCM_PROC)
+            return
+        end
+        f:write(on and "1\n" or "0\n")
+        f:close()
+        trace_line("%s = %d", Bluetooth.BCM_PROC, on and 1 or 0)
+    end,
+    read = function()
+        local f = io.open(Bluetooth.BCM_PROC, "r")
+        if not f then return nil end
+        local v = tonumber((f:read("*l") or ""):match("%d"))
+        f:close()
+        return v
+    end,
+}
+
+local function strategy_list(on)
+    local list = {}
+    for _, s in ipairs(btfd_strategies(on)) do list[#list + 1] = s end
+    if on then
+        -- The stock daemons may be down: bring them up before asking the
+        -- stack to enable the radio.
+        list[#list + 1] = upstart_strategy(true)
+        list[#list + 1] = ace_strategy
+        list[#list + 1] = wmt_strategy
+    else
+        list[#list + 1] = ace_strategy
+        list[#list + 1] = wmt_strategy
+        list[#list + 1] = upstart_strategy(false)
+    end
+    list[#list + 1] = btenabled_strategy
+    list[#list + 1] = bcm_strategy
+    return list
+end
 
 local function poll_state(read, target, tries, done)
     local function tick(n)
@@ -436,11 +568,13 @@ function Bluetooth.set_enabled(on, done)
 
     if Bluetooth.busy then return false, "busy" end
     local target = on and 1 or 0
-    if not Bluetooth.available() then
-        trace_line("no Bluetooth control backend answered")
+    if not Bluetooth.can_control() then
+        trace_line("no Bluetooth control mechanism on this device")
         return false, "unavailable"
     end
-    if Bluetooth.is_on() == on then
+
+    local status = Bluetooth.status(true)
+    if status.readable and status.state == (on and Bluetooth.STATE_ON or Bluetooth.STATE_OFF) then
         done(true, "already there")
         return true
     end
@@ -448,6 +582,7 @@ function Bluetooth.set_enabled(on, done)
     Bluetooth.busy = true
     trace_line("set_enabled(%s)", tostring(on))
 
+    local strategies = strategy_list(on)
     local index = 0
     local function next_strategy()
         index = index + 1
@@ -473,6 +608,7 @@ function Bluetooth.set_enabled(on, done)
                 Bluetooth.busy = false
                 Bluetooth.invalidate()
                 state_source = strategy.source
+                remember_state(on)
                 trace_line("ok: %s", strategy.name)
                 return done(true, strategy.name)
             end
@@ -601,7 +737,7 @@ local ICON_OFF       = "\u{E7B1}" -- bluetooth-off
 
 function Bluetooth.action_icon()
     local status = Bluetooth.status()
-    if not status.available then return ICON_OFF end
+    if not Bluetooth.can_control() then return ICON_OFF end
     if status.state == Bluetooth.STATE_OFF then return ICON_OFF end
     if status.name then return ICON_CONNECTED end
     return ICON_ON
@@ -609,7 +745,7 @@ end
 
 function Bluetooth.action_label()
     local status = Bluetooth.status()
-    if not status.available then return _("n/a") end
+    if not Bluetooth.can_control() then return _("n/a") end
     if status.state == Bluetooth.STATE_OFF then return _("Off") end
     if status.name then return status.name end
     return _("On")
@@ -617,12 +753,12 @@ end
 
 function Bluetooth.is_active()
     local status = Bluetooth.status()
-    return status.available and status.state == Bluetooth.STATE_ON
+    return Bluetooth.can_control() and status.state == Bluetooth.STATE_ON
 end
 
 function Bluetooth.toggle(ctx)
     local status = Bluetooth.status(true)
-    if not status.available then
+    if not Bluetooth.can_control() then
         toast(_("No Bluetooth control was found on this device."), 4)
         return false
     end

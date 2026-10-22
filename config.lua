@@ -60,6 +60,12 @@ Config.DEFAULTS = {
     custom_actions = { },
     -- Verbose Bluetooth tracing in the KOReader log (crash.log).
     bluetooth_debug = false,
+    -- Last known Bluetooth radio state (0 = off, 1 = on). The stack can be
+    -- down while the radio is off, and then the state cannot be read.
+    bluetooth_state = 0,
+    -- This device has a Bluetooth control mechanism (ace_bt_cli, wmt_cli,
+    -- btfd, ...). Remembered so the button stays visible with the radio off.
+    bluetooth_capable = false,
     style = {
         padding = 5,
         h_gap = 4,
@@ -141,6 +147,8 @@ function Config.load()
     if cfg.idx_quickmenu_tab == nil then cfg.idx_quickmenu_tab = Config.DEFAULTS.idx_quickmenu_tab end
     if cfg.items_per_page == nil then cfg.items_per_page = Config.DEFAULTS.items_per_page end
     if cfg.bluetooth_debug == nil then cfg.bluetooth_debug = Config.DEFAULTS.bluetooth_debug end
+    if cfg.bluetooth_state == nil then cfg.bluetooth_state = Config.DEFAULTS.bluetooth_state end
+    if cfg.bluetooth_capable == nil then cfg.bluetooth_capable = Config.DEFAULTS.bluetooth_capable end
 
     -- style cleaning
     cfg.style = cfg.style or {}
