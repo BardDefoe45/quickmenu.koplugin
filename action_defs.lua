@@ -128,8 +128,12 @@ function ActionDefs.get()
             active_func = function(ctx) return Bluetooth.is_active() end,
             -- Only on Kindles whose Bluetooth is driven by com.lab126.btfd.
             visible_func = function(ctx) return ctx.device:isKindle() and Bluetooth.available() end,
-            help_text = _("Tap : Toggle Bluetooth\nHold : Nothing"),
+            help_text = _("Tap : Toggle Bluetooth\nHold : Show diagnostics"),
             callback = function(ctx) Bluetooth.toggle(ctx) end,
+            hold_callback = function(ctx)
+                Utils.closeMenu(ctx.touch_menu)
+                Bluetooth.show_diagnostics()
+            end
         },
         night = {
             icon = "\u{EC0D}", -- theme-light-dark

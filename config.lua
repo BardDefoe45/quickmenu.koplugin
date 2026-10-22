@@ -58,6 +58,8 @@ Config.DEFAULTS = {
         },
     },
     custom_actions = { },
+    -- Verbose Bluetooth tracing in the KOReader log (crash.log).
+    bluetooth_debug = false,
     style = {
         padding = 5,
         h_gap = 4,
@@ -138,6 +140,7 @@ function Config.load()
     if cfg.add_quickmenu_tab == nil then cfg.add_quickmenu_tab = Config.DEFAULTS.add_quickmenu_tab end
     if cfg.idx_quickmenu_tab == nil then cfg.idx_quickmenu_tab = Config.DEFAULTS.idx_quickmenu_tab end
     if cfg.items_per_page == nil then cfg.items_per_page = Config.DEFAULTS.items_per_page end
+    if cfg.bluetooth_debug == nil then cfg.bluetooth_debug = Config.DEFAULTS.bluetooth_debug end
 
     -- style cleaning
     cfg.style = cfg.style or {}

@@ -886,8 +886,20 @@ msgstr ""
 msgid "Could not switch Bluetooth. Try again from the system menu."
 msgstr ""
 
-msgid "Tap : Toggle Bluetooth\nHold : Nothing"
+msgid "n/a"
 msgstr ""
 
-msgid "n/a"
+msgid "Bluetooth debug log"
+msgstr ""
+
+msgid "Could not switch Bluetooth. Long-press the button for diagnostics."
+msgstr ""
+
+msgid "No Bluetooth control was found on this device."
+msgstr ""
+
+msgid "Saved to:"
+msgstr ""
+
+msgid "Tap : Toggle Bluetooth\nHold : Show diagnostics"
 msgstr ""

@@ -22,8 +22,20 @@ msgstr "开启"
 msgid "Quick Menu for settings and actions (with Kindle Bluetooth toggle)."
 msgstr "快捷菜单：设置与常用操作（含 Kindle 蓝牙开关）。"
 
-msgid "Tap : Toggle Bluetooth\nHold : Nothing"
-msgstr "点按：开关蓝牙\n长按：无操作"
-
 msgid "n/a"
 msgstr "不可用"
+
+msgid "Bluetooth debug log"
+msgstr "蓝牙调试日志"
+
+msgid "Could not switch Bluetooth. Long-press the button for diagnostics."
+msgstr "无法切换蓝牙。长按蓝牙按钮可查看诊断信息。"
+
+msgid "No Bluetooth control was found on this device."
+msgstr "在此设备上找不到可用的蓝牙控制方式。"
+
+msgid "Saved to:"
+msgstr "已保存到："
+
+msgid "Tap : Toggle Bluetooth\nHold : Show diagnostics"
+msgstr "点按：开关蓝牙\n长按：查看诊断信息"

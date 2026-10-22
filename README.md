@@ -151,34 +151,60 @@ This plugin has been built by building upon the work and ideas of several commun
 
 ## Kindle Bluetooth
 
-Kindles expose their Bluetooth stack through Lab126's `com.lab126.btfd` LIPC
-service, which KOReader does not drive on its own. This fork adds a single
-Bluetooth toggle to the Actions section — Kindle only, and only when `btfd`
-answers:
+Kindles drive their Bluetooth through Lab126's own stack, and which API that
+is depends on the generation. This fork adds a single Bluetooth toggle to the
+Actions section — Kindle only, and only when something answers:
 
 * **Quick action** – a Bluetooth button next to Wi-Fi. Tap toggles the radio,
-  showing a "turning on/off…" notice while it polls `BTstate` until the radio
-  actually followed, then refreshes the panel.
+  showing a "turning on/off…" notice while it polls the radio state until the
+  switch actually took effect, then refreshes the panel.
 * **State on the button** – `bluetooth-off` when off, `bluetooth` when on,
   `bluetooth-connect` (plus the connected device name as label) when a device is
   connected.
 
+### How the toggle works
+
+"Turn the radio on/off" is not one API on Kindle, it is several, and the
+firmware differences are exactly why a naive implementation fails with *"could
+not switch Bluetooth"*. The toggle therefore walks a chain of strategies and
+verifies the state after every one of them, instead of trusting the write:
+
+| # | Strategy | Used on |
+| :--- | :--- | :--- |
+| 1 | `com.lab126.btfd` LIPC, `BTenable` = `"1:1"` / `"0:1"` | Broadcom Kindles, and the LIPC facade on newer ones |
+| 2 | `com.lab126.btfd` LIPC, `BTenable` = `"1"` / `"0"` | firmwares that want the bare value |
+| 3 | `/usr/bin/ace_bt_cli enable` / `disable` | MediaTek (11th/12th gen) — the stock `ace_bt` stack |
+| 4 | `/usr/bin/wmt_cli bluetooth on` / `off` | MediaTek CONSYS chip power |
+| 5 | `initctl start/stop acsbtfd` + `btmanagerd` | MediaTek stock daemons |
+| 6 | `com.lab126.btfd` LIPC, `btEnabled` = 1/0 | firmwares exposing `btEnabled` instead |
+| 7 | `/proc/bluetooth/btenable` | Broadcom chip power switch |
+
+The state is read from `btfd`'s `BTstate` when it answers, and from
+`ace_bt_cli radiostate` otherwise; whichever backend actually moved the radio
+last is the one the button trusts afterwards.
+
+### Diagnostics
+
+* **Long-press the Bluetooth button** for a report: the detected backend, the
+  raw property values (`BTstate`, `currentBTOperatingMode`, `isAudibleAvailable`,
+  `BTconnectedDevName`), which tools exist on the device
+  (`ace_bt_cli`, `wmt_cli`, `/proc/bluetooth/btenable`, `/dev/stpbt`), the
+  running Bluetooth processes and upstart jobs, and the trace of the last
+  operations. The same report is written to
+  `koreader/settings/quickmenu_bluetooth_debug.txt`.
+* **Settings → Quick menu → Bluetooth debug log** turns on verbose tracing in
+  `crash.log` (`[quickmenu][bt]` lines). Off by default; it only logs while
+  something is being toggled.
+
 There is nothing else: no scanning, no auto-connect, no keepalive, no startup
-hook — connecting devices and pairing stay in the Kindle UI, so the plugin adds
-no background work and no battery cost.
+hook, no background polling — the button only talks to the device when it is
+tapped, so the plugin adds no battery cost.
 
-The radio is switched with `BTenable "<0|1>:<mode>"`, reusing the radio's
-current operating mode (`1` = non-audio / HID remotes, `2` = audio) instead of
-forcing one, so page turners and audio devices both keep working.
-
-Notes:
-
-* Requires a Kindle whose Bluetooth is driven by `btfd` (PW5/PW6, Scribe,
-  Colorsoft, …). On the 11th generation devices it is driven by `libace_bt`,
-  and the action stays hidden.
-* Reverse-engineering references: the KindleModding wiki pages for
-  [`com.lab126.btfd`](https://kindlemodding.org/kindle-apps-and-services/com.lab126.btfd.html)
-  and the on-device notes in [KinAMP](https://github.com/kbarni/KinAMP).
+Reverse-engineering references: the KindleModding wiki pages for
+[`com.lab126.btfd`](https://kindlemodding.org/kindle-apps-and-services/com.lab126.btfd.html),
+the on-device notes in [KinAMP](https://github.com/kbarni/KinAMP), and the
+MediaTek/ace_bt details in
+[kindle-hid-passthrough](https://github.com/zampierilucas/kindle-hid-passthrough).
 
 ## Actions list
 

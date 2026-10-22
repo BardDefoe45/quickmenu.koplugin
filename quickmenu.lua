@@ -276,6 +276,20 @@ function QuickMenu.buildGlobalSubmenu(plugin, close, refresh)
         separator = true,
     })
 
+    -- bluetooth debug (Kindle only)
+    if Device:isKindle() then
+        table.insert(global_items, {
+            text = _("Bluetooth debug log"),
+            checked_func = function() return config.bluetooth_debug == true end,
+            callback = function()
+                config.bluetooth_debug = not (config.bluetooth_debug == true)
+                Config.save(config)
+                require("bluetooth").set_debug(config.bluetooth_debug == true)
+            end,
+            separator = true,
+        })
+    end
+
     -- style
     table.insert(global_items, {
         text = _("Style") .. "\xE2\x80\xA6",
