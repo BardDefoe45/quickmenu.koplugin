@@ -871,15 +871,6 @@ msgstr ""
 msgid "Show on all tab"
 msgstr ""
 
-msgid "(for page turner keys)"
-msgstr ""
-
-msgid "Applied the next time Bluetooth is switched on."
-msgstr ""
-
-msgid "Auto-connect last device"
-msgstr ""
-
 msgid "Bluetooth"
 msgstr ""
 
@@ -892,95 +883,11 @@ msgstr ""
 msgid "Bluetooth: turning on…"
 msgstr ""
 
-msgid "Connecting…"
-msgstr ""
-
-msgid "Connected"
-msgstr ""
-
-msgid "Could not connect. Make sure the device is on and in range."
-msgstr ""
-
-msgid "Could not disconnect."
-msgstr ""
-
-msgid "Could not pair with this device."
-msgstr ""
-
-msgid "Could not start a scan."
-msgstr ""
-
 msgid "Could not switch Bluetooth. Try again from the system menu."
 msgstr ""
 
-msgid "Device forgotten."
+msgid "Tap : Toggle Bluetooth\nHold : Nothing"
 msgstr ""
 
-msgid "Disconnected"
-msgstr ""
-
-msgid "Disconnecting…"
-msgstr ""
-
-msgid "Forget"
-msgstr ""
-
-msgid "Forget this device?"
-msgstr ""
-
-msgid "Hold a device to forget it"
-msgstr ""
-
-msgid "Input devices rescanned."
-msgstr ""
-
-msgid "Input rescan not supported on this device."
-msgstr ""
-
-msgid "Keep connection alive (no idle disconnect)"
-msgstr ""
-
-msgid "Map page turner keys (PageUp/PageDown)"
-msgstr ""
-
-msgid "Nearby devices"
-msgstr ""
-
-msgid "No new devices found"
-msgstr ""
-
-msgid "No paired devices"
-msgstr ""
-
-msgid "Not available"
-msgstr ""
-
-msgid "Paired devices"
-msgstr ""
-
-msgid "Paired, but not connected. Try it from the paired list."
-msgstr ""
-
-msgid "Pairing…"
-msgstr ""
-
-msgid "Rescan input devices"
-msgstr ""
-
-msgid "Scan for devices…"
-msgstr ""
-
-msgid "Scanning for Bluetooth devices…"
-msgstr ""
-
-msgid "Tap : Toggle Bluetooth\nHold : Manage Bluetooth devices"
-msgstr ""
-
-msgid "Turn Bluetooth off"
-msgstr ""
-
-msgid "Turn Bluetooth on"
-msgstr ""
-
-msgid "Turn on with KOReader"
+msgid "n/a"
 msgstr ""

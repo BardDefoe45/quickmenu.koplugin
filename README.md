@@ -2,9 +2,9 @@
 
 `quickmenu.koplugin` is a highly customizable menu plugin designed to enhance navigation and accessibility on your e-reader. By providing a centralized hub for frequently used actions, light settings, and shortcuts, it streamlines the reading experience, allowing for quick adjustments without navigating deep into system menus.
 
-> **This fork** adds Kindle Bluetooth management (radio toggle, paired devices,
-> scanning, page turner key support) — see [Kindle Bluetooth](#kindle-bluetooth).
-> Install it as `quickmenu.koplugin`, like the upstream plugin.
+> **This fork** adds a Kindle Bluetooth on/off quick action (see
+> [Kindle Bluetooth](#kindle-bluetooth)). Install it as `quickmenu.koplugin`,
+> like the upstream plugin.
 
 <p align="center">
   <img src="assets/global1.png" width="30%" alt="Global view 1" />
@@ -152,24 +152,20 @@ This plugin has been built by building upon the work and ideas of several commun
 ## Kindle Bluetooth
 
 Kindles expose their Bluetooth stack through Lab126's `com.lab126.btfd` LIPC
-service, which KOReader does not drive on its own. This fork adds Bluetooth
-management to the Actions section — Kindle only, and only when `btfd` answers:
+service, which KOReader does not drive on its own. This fork adds a single
+Bluetooth toggle to the Actions section — Kindle only, and only when `btfd`
+answers:
 
-* **Quick action** – a Bluetooth button next to Wi-Fi shows the radio state and
-  the connected device name. Tap toggles the radio, hold opens the manager.
-* **Device manager** – paired devices (tap to connect/disconnect, hold to
-  forget), scan for nearby devices (tap to pair and connect), an input-device
-  rescan for Bluetooth page turner keys, and four preferences:
-  - *Keep connection alive (no idle disconnect)* – inhibits `btfd`'s idle
-    disconnect; it is read by `btfd` when the radio initialises, so the change
-    takes effect at the next power-on.
-  - *Auto-connect last device* – reconnect the last used device when the radio
-    comes up.
-  - *Turn on with KOReader* – raise the radio a few seconds after startup.
-  - *Map page turner keys (PageUp/PageDown)* – remotes send the standard HID
-    `KEY_PAGEUP`/`KEY_PAGEDOWN` (evdev 104/109). Kindles without hardware page
-    buttons don't declare those keycodes, so they are mapped to page turns
-    (models with page buttons are left untouched).
+* **Quick action** – a Bluetooth button next to Wi-Fi. Tap toggles the radio,
+  showing a "turning on/off…" notice while it polls `BTstate` until the radio
+  actually followed, then refreshes the panel.
+* **State on the button** – `bluetooth-off` when off, `bluetooth` when on,
+  `bluetooth-connect` (plus the connected device name as label) when a device is
+  connected.
+
+There is nothing else: no scanning, no auto-connect, no keepalive, no startup
+hook — connecting devices and pairing stay in the Kindle UI, so the plugin adds
+no background work and no battery cost.
 
 The radio is switched with `BTenable "<0|1>:<mode>"`, reusing the radio's
 current operating mode (`1` = non-audio / HID remotes, `2` = audio) instead of
@@ -177,10 +173,6 @@ forcing one, so page turners and audio devices both keep working.
 
 Notes:
 
-* A Bluetooth page turner only produces keys while the radio is up and the
-  remote is connected. KOReader enumerates input devices at startup only, so
-  the plugin re-enumerates them after each connection — a remote connected
-  while KOReader is already running is then picked up too.
 * Requires a Kindle whose Bluetooth is driven by `btfd` (PW5/PW6, Scribe,
   Colorsoft, …). On the 11th generation devices it is driven by `libace_bt`,
   and the action stays hidden.
@@ -199,7 +191,7 @@ The following tables detail the available actions, their labels, and the functio
 | Action | Label | Tap | Hold |
 | :--- | :--- | :--- | :--- |
 | **WiFi** | WiFi | Toggle Wi-Fi | Show Wi-Fi picker |
-| **Bluetooth** | On/Off/Device name | Toggle Bluetooth | Manage Bluetooth devices |
+| **Bluetooth** | On/Off/Device name | Toggle Bluetooth | N/A |
 | **Night** | Day/Night | Toggle night mode | N/A |
 | **Light** | Intensity % | Toggle frontlight | Show frontlight dialog |
 | **Warmth** | Warmth % | N/A | Show frontlight dialog |

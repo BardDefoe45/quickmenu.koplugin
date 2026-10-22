@@ -1,12 +1,3 @@
-msgid "(for page turner keys)"
-msgstr "（用于翻页器按键）"
-
-msgid "Applied the next time Bluetooth is switched on."
-msgstr "将在下次开启蓝牙时生效。"
-
-msgid "Auto-connect last device"
-msgstr "自动连接上次使用的设备"
-
 msgid "Bluetooth"
 msgstr "蓝牙"
 
@@ -19,74 +10,8 @@ msgstr "蓝牙：正在关闭…"
 msgid "Bluetooth: turning on…"
 msgstr "蓝牙：正在开启…"
 
-msgid "Cancel"
-msgstr "取消"
-
-msgid "Close"
-msgstr "关闭"
-
-msgid "Connecting…"
-msgstr "正在连接…"
-
-msgid "Connected"
-msgstr "已连接"
-
-msgid "Could not connect. Make sure the device is on and in range."
-msgstr "连接失败，请确认设备已开机并在范围内。"
-
-msgid "Could not disconnect."
-msgstr "断开失败。"
-
-msgid "Could not pair with this device."
-msgstr "无法与该设备配对。"
-
-msgid "Could not start a scan."
-msgstr "无法开始扫描。"
-
 msgid "Could not switch Bluetooth. Try again from the system menu."
 msgstr "无法切换蓝牙，请到系统菜单里再试一次。"
-
-msgid "Device forgotten."
-msgstr "已移除该设备的配对信息。"
-
-msgid "Disconnected"
-msgstr "已断开"
-
-msgid "Disconnecting…"
-msgstr "正在断开…"
-
-msgid "Forget"
-msgstr "移除"
-
-msgid "Forget this device?"
-msgstr "移除该设备的配对信息？"
-
-msgid "Hold a device to forget it"
-msgstr "长按设备可移除配对"
-
-msgid "Input devices rescanned."
-msgstr "已重新扫描输入设备。"
-
-msgid "Input rescan not supported on this device."
-msgstr "此设备不支持重新扫描输入设备。"
-
-msgid "Keep connection alive (no idle disconnect)"
-msgstr "保持连接（防止闲置断开）"
-
-msgid "Map page turner keys (PageUp/PageDown)"
-msgstr "映射翻页器按键（PageUp/PageDown）"
-
-msgid "Nearby devices"
-msgstr "附近设备"
-
-msgid "No new devices found"
-msgstr "没有发现新设备"
-
-msgid "No paired devices"
-msgstr "没有已配对设备"
-
-msgid "Not available"
-msgstr "不可用"
 
 msgid "Off"
 msgstr "关闭"
@@ -94,38 +19,11 @@ msgstr "关闭"
 msgid "On"
 msgstr "开启"
 
-msgid "Paired devices"
-msgstr "已配对设备"
+msgid "Quick Menu for settings and actions (with Kindle Bluetooth toggle)."
+msgstr "快捷菜单：设置与常用操作（含 Kindle 蓝牙开关）。"
 
-msgid "Paired, but not connected. Try it from the paired list."
-msgstr "已配对但未连接，请在“已配对设备”里手动连接。"
-
-msgid "Pairing…"
-msgstr "正在配对…"
-
-msgid "Quick Menu for settings and actions (with Kindle Bluetooth management)."
-msgstr "快捷菜单：设置与常用操作（含 Kindle 蓝牙管理）。"
-
-msgid "Rescan input devices"
-msgstr "重新扫描输入设备"
-
-msgid "Scan for devices…"
-msgstr "扫描设备…"
-
-msgid "Scanning for Bluetooth devices…"
-msgstr "正在扫描蓝牙设备…"
-
-msgid "Tap : Toggle Bluetooth\nHold : Manage Bluetooth devices"
-msgstr "点按：开关蓝牙\n长按：管理蓝牙设备"
-
-msgid "Turn Bluetooth off"
-msgstr "关闭蓝牙"
-
-msgid "Turn Bluetooth on"
-msgstr "开启蓝牙"
-
-msgid "Turn on with KOReader"
-msgstr "随 KOReader 启动时开启"
+msgid "Tap : Toggle Bluetooth\nHold : Nothing"
+msgstr "点按：开关蓝牙\n长按：无操作"
 
 msgid "n/a"
 msgstr "不可用"

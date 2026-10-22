@@ -15,7 +15,7 @@ local UIManager    = require("ui/uimanager")
 local Util         = require("util")
 
 local Utils            = require("common/utils")
-local Bluetooth        = require("bluetooth/dialog")
+local Bluetooth        = require("bluetooth")
 local _                = require("common/i18n").gettext
 
 local ActionDefs = {}
@@ -128,12 +128,8 @@ function ActionDefs.get()
             active_func = function(ctx) return Bluetooth.is_active() end,
             -- Only on Kindles whose Bluetooth is driven by com.lab126.btfd.
             visible_func = function(ctx) return ctx.device:isKindle() and Bluetooth.available() end,
-            help_text = _("Tap : Toggle Bluetooth\nHold : Manage Bluetooth devices"),
+            help_text = _("Tap : Toggle Bluetooth\nHold : Nothing"),
             callback = function(ctx) Bluetooth.toggle(ctx) end,
-            hold_callback = function(ctx)
-                Utils.closeMenu(ctx.touch_menu)
-                Bluetooth.show(ctx)
-            end
         },
         night = {
             icon = "\u{EC0D}", -- theme-light-dark

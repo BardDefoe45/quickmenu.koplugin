@@ -410,13 +410,6 @@ function QuickMenuPlugin:init()
     local status, err = pcall(function()
         local Config = require("config")
         self.config = Config.load()
-        -- Kindle Bluetooth: raise the radio on startup when the user asked for it.
-        pcall(function()
-            if self.config.bluetooth.page_keys ~= false then
-                require("bluetooth/page_keys").install()
-            end
-            require("bluetooth/dialog").auto_start(self)
-        end)
         patchTouchMenu(self)
         patchFileManagerMenu(self)
         patchReaderMenu(self)

@@ -58,15 +58,6 @@ Config.DEFAULTS = {
         },
     },
     custom_actions = { },
-    -- Kindle Bluetooth (com.lab126.btfd) options, see bluetooth/backend.lua
-    bluetooth = {
-        auto_on = false,      -- raise the radio when KOReader starts
-        auto_connect = true,  -- reconnect the last used device when the radio comes up
-        keepalive = true,     -- inhibit btfd's idle disconnect
-        page_keys = true,     -- map PageUp/PageDown from Bluetooth remotes to page turns
-        last_mac = nil,
-        last_name = nil,
-    },
     style = {
         padding = 5,
         h_gap = 4,
@@ -161,10 +152,6 @@ function Config.load()
 
     --
     cfg.custom_actions = cfg.custom_actions or {}
-
-    -- bluetooth (Kindle) preferences
-    cfg.bluetooth = type(cfg.bluetooth) == "table" and cfg.bluetooth or {}
-    copyMissing(cfg.bluetooth, Config.DEFAULTS.bluetooth)
 
     return cfg
 end
